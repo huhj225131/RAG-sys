@@ -1,16 +1,23 @@
-from typing import  List, Any,Dict
+from typing import  List, Any,Dict,Sequence
 from llama_index.core.llms import (
     CustomLLM,
     CompletionResponse,
     CompletionResponseGen,
     LLMMetadata,
 )
-from llama_index.core.llms.callbacks import llm_completion_callback
+from llama_index.core.base.llms.types import (
+    ChatMessage,
+    ChatResponse,
+)
+from llama_index.core.llms.callbacks import llm_completion_callback, llm_chat_callback
+from llama_index.core.base.llms.generic_utils import completion_response_to_chat_response
 from llama_index.core.embeddings import BaseEmbedding
-import json, requests
+import os, json, requests
 
-
-with open("api-keys.json", "r", encoding="utf-8") as f:
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+json_path = os.path.join(project_root, 'api-keys.json')
+with open(json_path, "r", encoding="utf-8") as f:
     keys = json.load(f)
 
 token_ids = {}
@@ -82,7 +89,7 @@ class LLM_Small(CustomLLM):
     n:int = 1
     model_name:str = "LLM small"
     model:str = models[model_name]
-    max_completion_tokens:int = 20
+    max_completion_tokens:int = 1000
         
     @property
     def metadata(self) -> LLMMetadata:
@@ -94,7 +101,11 @@ class LLM_Small(CustomLLM):
         )
 
     @llm_completion_callback()
-    def complete(self, prompt: List[Dict], **kwargs: Any) -> CompletionResponse:
+    def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        prompt = [{
+            "role": "user",
+            "content": prompt
+        }]
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -105,8 +116,12 @@ class LLM_Small(CustomLLM):
 
     @llm_completion_callback()
     def stream_complete(
-        self, prompt: List[Dict], **kwargs: Any
+        self, prompt: str, **kwargs: Any
     ) -> CompletionResponseGen:
+        prompt = [{
+            "role": "user",
+            "content": prompt
+        }]
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -126,13 +141,28 @@ class LLM_Small(CustomLLM):
                 delta=w,
                 raw=response if cum == full_text else None
             )
+    @llm_chat_callback()
+    def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
+        prompt = []
+        for m in messages:
+            prompt.append({
+                "role": m.role, 
+                "content": m.content
+            })
+        response = llm_req(authors[self.model_name], token_ids[self.model_name],
+                           token_keys[self.model_name],self.model,
+                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
+                           **kwargs)
+        completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
+        return completion_response_to_chat_response(completion_response)
 
 class LLM_Large(CustomLLM):
     temperature:float = 1.0 
     top_q:float = 0.6
     top_k:int = 10
     n:int = 1
-    max_completion_tokens:int = 20
+    max_completion_tokens:int = 1000
     model_name:str = "LLM large"
     model:str = models[model_name]
     
@@ -147,7 +177,11 @@ class LLM_Large(CustomLLM):
         )
 
     @llm_completion_callback()
-    def complete(self, prompt: List[Dict], **kwargs: Any) -> CompletionResponse:
+    def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        prompt = [{
+            "role": "user",
+            "content": prompt
+        }]
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -158,8 +192,12 @@ class LLM_Large(CustomLLM):
 
     @llm_completion_callback()
     def stream_complete(
-        self, prompt: List[Dict], **kwargs: Any
+        self, prompt: str, **kwargs: Any
     ) -> CompletionResponseGen:
+        prompt = [{
+            "role": "user",
+            "content": prompt
+        }]
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -179,6 +217,21 @@ class LLM_Large(CustomLLM):
                 delta=w,
                 raw=response if cum == full_text else None
             )
+    @llm_chat_callback()
+    def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
+        prompt = []
+        for m in messages:
+            prompt.append({
+                "role": m.role, 
+                "content": m.content
+            })
+        response = llm_req(authors[self.model_name], token_ids[self.model_name],
+                           token_keys[self.model_name],self.model,
+                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
+                           **kwargs)
+        completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
+        return completion_response_to_chat_response(completion_response)
 
 
 def emb_req(api_url:str, **kwargs):
@@ -234,11 +287,6 @@ class Embedding(BaseEmbedding):
         return self._get_text_embedding(text)
 
 # test
-# respone = LLM_Large().complete([
-# {
-# "role": "user",
-# "content": "Chào bạn!"
-# }
-# ])
+# respone = LLM_Large().complete("Chào bạn!")
 # print(respone)
 # print(Embedding()._get_text_embeddings(texts=["hehe", "hehehe"])[0])

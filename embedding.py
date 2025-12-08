@@ -1,7 +1,8 @@
 import chromadb
-from model import  Embedding
+from core import  Embedding
 from llama_index.core import VectorStoreIndex,SimpleDirectoryReader
 from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core.schema import TextNode
 from llama_index.core import StorageContext, Settings
 import chromadb
 import argparse
@@ -41,10 +42,11 @@ def default_chunking(
     splitter = SentenceSplitter()
     nodes = []
     for doc in documents:
-        nodes.extend(splitter.split_text(doc.text))  # nodes dạng BaseNode
-    # Gán metadata
-    for node in nodes:
-        node.metadata["chunk_type"] = "default"
+        chunks = splitter.split_text(doc.text)
+        for chunk in chunks:
+            node = TextNode(text=chunk, metadata={})
+            node.metadata["chunk_type"] = "default"
+            nodes.append(node)
     index = VectorStoreIndex(nodes, storage_context=storage_context)
     
 def semantic_chunking(

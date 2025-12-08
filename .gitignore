@@ -3,3 +3,7 @@
 /data
 api-keys.json
 *.pdf
+/chroma_store
+.env
+__pycache__
+core/__pycache__/
