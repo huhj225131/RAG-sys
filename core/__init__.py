@@ -4,6 +4,7 @@
 from .config import setup_config
 from .rag_engine import RAGService
 from .model import LLM_Large, LLM_Small, Embedding
+from .custom_synthesizer import CustomCompactAndRefine
 # Nếu trong embedding.py bạn có hàm/class tên là 'generate_embeddings' hay gì đó
 # from .embedding import generate_embeddings 
 

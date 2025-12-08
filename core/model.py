@@ -1,4 +1,4 @@
-from typing import  List, Any,Dict,Sequence
+from typing import  List, Any,Dict,Tuple,Sequence
 from llama_index.core.llms import (
     CustomLLM,
     CompletionResponse,
@@ -80,8 +80,36 @@ def llm_req(author:str,
 
         except Exception as e:
             raise RuntimeError(f"Unknown error: {str(e)}")
-            
-        
+
+def few_shot_custom_rag(
+    prompt, 
+    examples: List[Tuple[str, str]], 
+    system_instruction: str = None
+) -> None:
+    if system_instruction:
+        # Kiểm tra xem đã có system prompt chưa
+        has_system = False
+        for msg in prompt:
+            if msg["role"] == "system":
+                msg["content"] = system_instruction # Ghi đè
+                has_system = True
+                break
+        # Nếu chưa có thì chèn vào đầu
+        if not has_system:
+            prompt.insert(0, {"role": "system", "content": system_instruction})
+
+    insert_index = 1 
+    if not prompt or prompt[0]["role"] != "system":
+        insert_index = 0
+
+    few_shot_msgs = []
+    for question, answer in examples:
+        few_shot_msgs.append({"role": "user", "content": question})
+        few_shot_msgs.append({"role": "assistant", "content": answer})
+    
+    prompt[insert_index:insert_index] = few_shot_msgs    
+
+
 class LLM_Small(CustomLLM):
     temperature:float = 1.0 
     top_q:float = 0.6
@@ -90,6 +118,7 @@ class LLM_Small(CustomLLM):
     model_name:str = "LLM small"
     model:str = models[model_name]
     max_completion_tokens:int = 1000
+    prompt:List[Dict] = []
         
     @property
     def metadata(self) -> LLMMetadata:
@@ -98,33 +127,38 @@ class LLM_Small(CustomLLM):
             model_name = self.model,
             temperature= self.temperature,
             num_output= self.max_completion_tokens
+            # is_chat_model=True
         )
 
     @llm_completion_callback()
     def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
-        prompt = [{
+        full_prompt = list(self.prompt)
+        full_prompt.append({
             "role": "user",
             "content": prompt
-        }]
+        })
+        print(f"Prompt cho completion:{prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
                            api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
                            **kwargs)
         
         return CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
-
+        # return CompletionResponse(text = "dump res")
+    
     @llm_completion_callback()
     def stream_complete(
         self, prompt: str, **kwargs: Any
     ) -> CompletionResponseGen:
-        prompt = [{
+        full_prompt = list(self.prompt)
+        full_prompt.append({
             "role": "user",
             "content": prompt
-        }]
+        })
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
                            api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
                            **kwargs)
         full_text = response['choices'][-1]["message"]['content']
@@ -143,19 +177,38 @@ class LLM_Small(CustomLLM):
             )
     @llm_chat_callback()
     def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
-        prompt = []
+        prompt = list(self.prompt)
         for m in messages:
-            prompt.append({
-                "role": m.role, 
-                "content": m.content
-            })
+            if m.role.value == "system":
+                # insert(0, ...) sẽ chèn vào vị trí đầu tiên (index 0)
+                prompt.insert(0, {
+                    "role": m.role.value, 
+                    "content": m.content
+                })
+            else:
+                # append(...) sẽ nối vào đuôi danh sách
+                prompt.append({
+                    "role": m.role.value, 
+                    "content": m.content
+                })
+            
+        # print(f"Đầu vào của hàm llm_req:{prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
                            api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
                            **kwargs)
         completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
+        # completion_response = CompletionResponse(text = "dump res")
         return completion_response_to_chat_response(completion_response)
+    
+
+    def few_shot_custom(
+        self, 
+        examples: List[Tuple[str, str]], 
+        system_instruction: str = None
+    ) -> None:
+        few_shot_custom_rag(self.prompt, examples=examples, system_instruction=system_instruction)
 
 class LLM_Large(CustomLLM):
     temperature:float = 1.0 
@@ -165,7 +218,7 @@ class LLM_Large(CustomLLM):
     max_completion_tokens:int = 1000
     model_name:str = "LLM large"
     model:str = models[model_name]
-    
+    prompt:List[Dict] = []
         
     @property
     def metadata(self) -> LLMMetadata:
@@ -178,13 +231,14 @@ class LLM_Large(CustomLLM):
 
     @llm_completion_callback()
     def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
-        prompt = [{
+        full_prompt = list(self.prompt)
+        full_prompt.append ({
             "role": "user",
             "content": prompt
-        }]
+        })
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
                            api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-large',
                            **kwargs)
         
@@ -194,13 +248,14 @@ class LLM_Large(CustomLLM):
     def stream_complete(
         self, prompt: str, **kwargs: Any
     ) -> CompletionResponseGen:
-        prompt = [{
+        full_prompt = self.prompt
+        full_prompt.append({
             "role": "user",
             "content": prompt
-        }]
+        })
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
+                           full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
                            api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-large',
                            **kwargs)
         full_text = response['choices'][-1]["message"]['content']
@@ -219,12 +274,21 @@ class LLM_Large(CustomLLM):
             )
     @llm_chat_callback()
     def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
-        prompt = []
+        prompt = list(self.prompt)
         for m in messages:
-            prompt.append({
-                "role": m.role, 
-                "content": m.content
-            })
+            if m.role.value == "system":
+                # insert(0, ...) sẽ chèn vào vị trí đầu tiên (index 0)
+                prompt.insert(0, {
+                    "role": m.role.value, 
+                    "content": m.content
+                })
+            else:
+                # append(...) sẽ nối vào đuôi danh sách
+                prompt.append({
+                    "role": m.role.value, 
+                    "content": m.content
+                })
+        # print(f"Đầu vào của hàm llm_req:{messages}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -232,6 +296,13 @@ class LLM_Large(CustomLLM):
                            **kwargs)
         completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
         return completion_response_to_chat_response(completion_response)
+    def few_shot_custom(
+        self, 
+        examples: List[Tuple[str, str]], 
+        system_instruction: str = None
+    ) -> None:
+        few_shot_custom_rag(self.prompt, examples=examples, system_instruction=system_instruction)
+    
 
 
 def emb_req(api_url:str, **kwargs):
@@ -262,6 +333,8 @@ def emb_req(api_url:str, **kwargs):
 
     except Exception as e:
         raise RuntimeError(f"Unknown error: {str(e)}")
+import random
+
 class Embedding(BaseEmbedding):
     model_name:str = "LLM embedings"
     model:str = models[model_name]
@@ -271,15 +344,18 @@ class Embedding(BaseEmbedding):
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=query, encoding_format=self.encoding_format)
         return resp["data"][0]["embedding"]
+        return [random.random() for _ in range(1024)]
     def _get_text_embedding(self, text: str) -> List[float]:
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=text, encoding_format=self.encoding_format)
         return resp["data"][0]["embedding"]
+        # return [random.random() for _ in range(1024)]
 
     def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=texts, encoding_format=self.encoding_format)
         return [item["embedding"] for item in resp["data"]]
+        # return [random.random() for _ in range(1024)]
     async def _aget_query_embedding(self, query: str) -> List[float]:
         return self._get_query_embedding(query)
 

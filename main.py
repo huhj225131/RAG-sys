@@ -7,14 +7,15 @@ load_dotenv()
 
 logging.getLogger("opik").setLevel(logging.ERROR)
 
-setup_config(small=True)
+setup_config(small=False)
 
 
 rag_service = RAGService()
 
 
 questions = [
-    "Ai là tổng thống Pháp hiện tại"
+    "Ai là tổng thống Pháp hiện tại",
+    "Xin chào nhé"
 ]
 
 print("\n--- BẮT ĐẦU HỎI ---")

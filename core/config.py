@@ -24,7 +24,7 @@ def setup_config(small=True, opik_prj="default"):
             skip_index_construction_trace=True 
         )
         Settings.callback_manager = CallbackManager([opik_callback])
-        print(f"✅ Opik is ENABLED (Project: {prj_name})")
+        # print(f"✅ Opik is ENABLED (Project: {prj_name})")
     
     if small:
         Settings.llm = LLM_Small()
