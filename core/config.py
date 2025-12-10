@@ -1,4 +1,5 @@
 
+## Set up opik để check log, embedding model và llm 
 import os
 import opik
 import json
@@ -7,7 +8,7 @@ from llama_index.core.callbacks import CallbackManager
 from opik.integrations.llama_index import LlamaIndexCallbackHandler
 from .model import LLM_Large, LLM_Small, Embedding # Import model của bạn
 
-def setup_config(small=True, opik_prj="default"):
+def setup_opik():
     enable_opik = os.getenv("ENABLE_OPIK", "False").lower() == "true"
 
     if enable_opik:
@@ -26,10 +27,5 @@ def setup_config(small=True, opik_prj="default"):
         Settings.callback_manager = CallbackManager([opik_callback])
         # print(f"✅ Opik is ENABLED (Project: {prj_name})")
     
-    if small:
-        Settings.llm = LLM_Small()
-    else:
-        Settings.llm = LLM_Large()
     
-    Settings.embed_model = Embedding()
     
