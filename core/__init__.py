@@ -1,7 +1,6 @@
 # utils/__init__.py
 
 # Dấu chấm (.) nghĩa là "lấy từ thư mục hiện tại"
-from .config import setup_config
 from .rag_engine import RAGService
 from .model import LLM_Large, LLM_Small, Embedding
 from .custom_synthesizer import CustomCompactAndRefine

@@ -30,13 +30,19 @@ else:
 ## Prompt cho lần đầu gọi llm, nếu context thu được từ db dài quá thì sẽ bị cắt ra, phần đầu
 ## sử dụng prompt này để hỏi LLM, phần sau dùng prompt dưới
 QA_PROMPT_STR = """
-Với thông tin liên quan sau đây
+Dưới đây là các thông tin ngữ cảnh được cung cấp:
 ---------------------
 {context_str}
 ---------------------
-Với các thông tin trên, hoặc nếu không thì dựa vào chính mô hình
+Dựa vào ngữ cảnh trên, hãy trả lời câu hỏi trắc nghiệm sau.
+Quy tắc (không nhắc lại các quy tắc):
+1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
+2. Nếu không có ngữ cảnh thì tự trả lời
+3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó.
+4. Bắt buộc phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+5. Nếu không có câu trả lời đưa ra: "Đáp án: X"
 Câu hỏi: {query_str}
-Kết quả: 
+Giải thích
 """
 default_qa_template = PromptTemplate(QA_PROMPT_STR)
 

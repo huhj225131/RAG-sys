@@ -118,7 +118,7 @@ class LLM_Small(CustomLLM):
     n:int = 1
     model_name:str = "LLM small"
     model:str = models[model_name]
-    max_completion_tokens:int = 1000
+    max_completion_tokens:int = 2000
     prompt:List[Dict] = []
         
     @property
@@ -138,7 +138,7 @@ class LLM_Small(CustomLLM):
             "role": "user",
             "content": prompt
         })
-        print(f"Prompt cho completion:{prompt}")
+        # print(f"Prompt cho completion:{prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -216,7 +216,7 @@ class LLM_Large(CustomLLM):
     top_q:float = 0.6
     top_k:int = 10
     n:int = 1
-    max_completion_tokens:int = 1000
+    max_completion_tokens:int = 2000
     model_name:str = "LLM large"
     model:str = models[model_name]
     prompt:List[Dict] = []
