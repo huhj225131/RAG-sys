@@ -6,7 +6,7 @@ import json
 from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager
 from opik.integrations.llama_index import LlamaIndexCallbackHandler
-from .model import LLM_Large, LLM_Small, Embedding # Import model của bạn
+
 
 def setup_opik():
     enable_opik = os.getenv("ENABLE_OPIK", "False").lower() == "true"
