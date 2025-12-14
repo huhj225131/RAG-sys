@@ -11,7 +11,10 @@ logging.getLogger("opik").setLevel(logging.ERROR)
 
 setup_opik()
 
-
+Settings.context_window=32000
+Settings.num_output=4000
+Settings.chunk_size=2048
+Settings.chunk_overlap=200
 # class RAGService():
 #     def __init__(self, node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.6)],
 #                  similarity_top_k=3,
@@ -54,7 +57,7 @@ Settings.llm.few_shot_custom(examples=few_shot, system_instruction="Bạn là 1 
 
 # data = ["Ai là tổng thống Mỹ",
 #         "Ai là tổng thống Pháp"]
-filename="test.json"
+filename="val.json"
 base_dir = os.getenv("DATA_DIR", "./data")
 full_path = os.path.join(base_dir, filename)
 if not os.path.exists(full_path):
