@@ -1,6 +1,6 @@
 import chromadb
-from core import  Embedding
-from llama_index.core import VectorStoreIndex,SimpleDirectoryReader
+from core import  Embedding,LLM_Small
+from llama_index.core import VectorStoreIndex,SimpleDirectoryReader, Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.schema import TextNode
 from llama_index.core import StorageContext, Settings
@@ -10,6 +10,10 @@ from llama_index.core.node_parser import (
     SentenceSplitter,
     SemanticSplitterNodeParser,
 )
+Settings.context_window=32000
+Settings.num_output=4000
+Settings.chunk_size=8000
+Settings.chunk_overlap=200
 
 # ---------------- Argument parser ----------------
 parser = argparse.ArgumentParser(description="Embedding process")
@@ -62,7 +66,9 @@ def semantic_chunking(
     chroma_collection = db.get_or_create_collection(collection)
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    semantic_splitter = SemanticSplitterNodeParser(buffer_size=buffer_size, breakpoint_percentile_threshold=breakpoint_percentile_threshold)
+    semantic_splitter = SemanticSplitterNodeParser(buffer_size=buffer_size,
+                                                   breakpoint_percentile_threshold=breakpoint_percentile_threshold,
+                                                   embed_model=Embedding())
     nodes = semantic_splitter.get_nodes_from_documents(documents)
     for node in nodes:
         node.metadata["chunk_type"] = "semantic"
@@ -74,6 +80,7 @@ if args.mode == "default":
     default_chunking(args.persist_dir,args.collection,args.data_dir)
 
 elif args.mode == "semantic":
+    print("Dang dung cai semantic")
     semantic_chunking(args.persist_dir, args.collection,
                       args.data_dir, args.buffer_size,
                       args.percentile)
