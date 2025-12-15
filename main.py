@@ -43,7 +43,7 @@ rag_service = SimpleRAGService()
     #     >>> service.update_config(similarity_top_k=5)
 ###
 filename="few_shot.json"
-base_dir = os.getenv("DATA_DIR", "./data")
+base_dir = os.getenv("DATA_DIR", "./")
 full_path = os.path.join(base_dir, filename)
 if not os.path.exists(full_path):
             raise FileNotFoundError(f"Không tìm thấy file: {full_path}")

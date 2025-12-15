@@ -1,0 +1,62 @@
+[
+  {
+    "qid": "val_0003",
+    "question": "Đoạn thông tin:\n[1] Tiêu đề: Lịch sử hình thành Cố đô Hoa Lư\nNội dung: Cố đô Hoa Lư là quần thể di tích quốc gia đặc biệt quan trọng của Việt Nam đồng thời là một trong 4 vùng lõi của quần thể di sản thế giới Tràng An đã được UNESCO công nhận. Hệ thống di tích ở Hoa Lư liên quan đến sự nghiệp của các nhân vật lịch sử thuộc ba triều đại nhà Đinh, nhà Tiền Lê và khởi đầu nhà Lý, tính từ Đinh Tiên Hoàng đến Lý Thái Tổ trong lịch sử. Hoa Lư là kinh đô đầu tiên của nhà nước phong kiến Trung ương tập quyền ở Việt Nam với các dấu ấn lịch sử: thống nhất giang sơn, đánh Tống - dẹp Chiêm và phát tích quá trình định đô Thăng Long - Hà Nội. Năm 1010, vua Lý Thái Tổ dời đô từ Hoa Lư về Thăng Long, Hoa Lư trở thành Cố đô. Các triều vua Lý, Trần, Lê, Nguyễn sau đó vẫn cho tu bổ, xây dựng thêm nhiều công trình kiến trúc ở đây như đền thờ vua Đinh, đền thờ vua Lê, chùa Nhất Trụ, phủ Vườn Thiên...\n\nCâu hỏi: Kinh đô Hoa Lư gắn liền với ba triều đại phong kiến nào của Việt Nam?",
+    "choices": [
+      "Nhà Ngô, Nhà Đinh, Nhà Tiền Lê",
+      "Nhà Đinh, Nhà Tiền Lê, Nhà Lý",
+      "Nhà Tiền Lê, Nhà Lý, Nhà Trần",
+      "Nhà Lý, Nhà Trần, Nhà Hậu Lê"
+    ],
+    "explanation": "Dựa vào đoạn thông tin: 'Hệ thống di tích ở Hoa Lư liên quan đến sự nghiệp của các nhân vật lịch sử thuộc ba triều đại nhà Đinh, nhà Tiền Lê và khởi đầu nhà Lý'.",
+    "answer": "B"
+  },
+  {
+    "qid": "val_0004",
+    "question": "Đoạn thông tin:\n[1] Tiêu đề: Công nghệ Blockchain\nNội dung: Blockchain (chuỗi khối) là một cơ sở dữ liệu phân cấp lưu trữ thông tin trong các khối thông tin được liên kết với nhau bằng mã hóa và mở rộng theo thời gian. Mỗi khối thông tin đều chứa thông tin về thời gian khởi tạo và liên kết tới khối trước đó, kèm một mã thời gian và dữ liệu giao dịch. Blockchain được thiết kế để chống lại việc thay đổi của dữ liệu: Một khi dữ liệu đã được mạng lưới chấp nhận thì sẽ không có cách nào thay đổi được nó. Công nghệ này được đảm bảo nhờ cách sử dụng một hệ thống tính toán phân cấp với khả năng chịu lỗi Byzantine cao. Vì vậy, Blockchain phù hợp để ghi lại những sự kiện, hồ sơ y tế, xử lý giao dịch, công chứng, danh tính và chứng minh nguồn gốc. Việc phát minh ra blockchain cho bitcoin đã làm cho nó trở thành loại tiền tệ kỹ thuật số đầu tiên giải quyết được vấn đề double spending (chi tiêu gian lận hai lần) mà không cần phải có một cơ quan tin cậy hay một máy chủ trung tâm nào.\n\nCâu hỏi: Đặc điểm nào sau đây KHÔNG phải là đặc điểm của Blockchain được đề cập trong đoạn văn?",
+    "choices": [
+      "Lưu trữ thông tin trong các khối liên kết bằng mã hóa.",
+      "Dữ liệu có thể dễ dàng thay đổi sau khi được mạng lưới chấp nhận.",
+      "Sử dụng hệ thống tính toán phân cấp.",
+      "Giải quyết vấn đề double spending mà không cần máy chủ trung tâm."
+    ],
+    "explanation": "Đoạn văn nêu rõ: 'Blockchain được thiết kế để chống lại việc thay đổi của dữ liệu: Một khi dữ liệu đã được mạng lưới chấp nhận thì sẽ không có cách nào thay đổi được nó'. Do đó, phương án cho rằng dữ liệu dễ dàng thay đổi là sai.",
+    "answer": "B"
+  },
+  {
+    "qid": "val_0005",
+    "question": "Ai là người sáng tác bài hát 'Tiến quân ca', quốc ca của nước Cộng hòa Xã hội Chủ nghĩa Việt Nam?",
+    "choices": [
+      "Phạm Duy",
+      "Trịnh Công Sơn",
+      "Văn Cao",
+      "Hoàng Vân"
+    ],
+    "explanation": "Kiến thức chung: Văn Cao là nhạc sĩ sáng tác bài 'Tiến quân ca' vào năm 1944.",
+    "answer": "C"
+  },
+  {
+    "qid": "val_0006",
+    "question": "Đoạn thông tin:\n[1] Tiêu đề: Tác dụng của Vitamin C\nNội dung: Vitamin C, hay axit ascorbic, là một chất dinh dưỡng thiết yếu giúp cơ thể hình thành và duy trì mô liên kết, bao gồm xương, mạch máu và da. Nó cũng hoạt động như một chất chống oxy hóa, bảo vệ tế bào khỏi tác hại của các gốc tự do. Thiếu vitamin C nghiêm trọng có thể dẫn đến bệnh scorbut, gây mệt mỏi, viêm nướu, các đốm đỏ trên da và đau khớp. Vitamin C được tìm thấy nhiều trong các loại trái cây họ cam quýt, ớt chuông, dâu tây, cà chua và rau họ cải. Khác với hầu hết các loài động vật, con người không thể tự tổng hợp vitamin C mà phải hấp thụ qua chế độ ăn uống hàng ngày.\n\nCâu hỏi: Theo đoạn văn, con người có khả năng tự tổng hợp Vitamin C không?",
+    "choices": [
+      "Có, nhưng chỉ một lượng nhỏ.",
+      "Có, nếu tập thể dục thường xuyên.",
+      "Không, phải hấp thụ qua chế độ ăn uống.",
+      "Không, trừ khi được tiêm bổ sung."
+    ],
+    "explanation": "Đoạn cuối văn bản ghi rõ: 'Khác với hầu hết các loài động vật, con người không thể tự tổng hợp vitamin C mà phải hấp thụ qua chế độ ăn uống hàng ngày'.",
+    "answer": "C"
+  },
+  {
+    "qid": "val_0007",
+    "question": "Thành phố nào là thủ đô của Nhật Bản?",
+    "choices": [
+      "Kyoto",
+      "Osaka",
+      "Tokyo",
+      "Hiroshima"
+    ],
+    "explanation": "Kiến thức địa lý cơ bản: Tokyo là thủ đô hiện tại của Nhật Bản.",
+    "answer": "C"
+  }
+]
