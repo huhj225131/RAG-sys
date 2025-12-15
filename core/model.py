@@ -118,7 +118,7 @@ class LLM_Small(CustomLLM):
     n:int = 1
     model_name:str = "LLM small"
     model:str = models[model_name]
-    max_completion_tokens:int = 2000
+    max_completion_tokens:int = 3000
     prompt:List[Dict] = []
         
     @property
@@ -216,7 +216,7 @@ class LLM_Large(CustomLLM):
     top_q:float = 0.6
     top_k:int = 10
     n:int = 1
-    max_completion_tokens:int = 2000
+    max_completion_tokens:int = 3000
     model_name:str = "LLM large"
     model:str = models[model_name]
     prompt:List[Dict] = []
