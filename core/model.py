@@ -176,32 +176,7 @@ class LLM_Small(CustomLLM):
                 delta=w,
                 raw=response if cum == full_text else None
             )
-    @llm_chat_callback()
-    def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
-        prompt = list(self.prompt)
-        for m in messages:
-            if m.role.value == "system":
-                # insert(0, ...) sẽ chèn vào vị trí đầu tiên (index 0)
-                prompt.insert(0, {
-                    "role": m.role.value, 
-                    "content": m.content
-                })
-            else:
-                # append(...) sẽ nối vào đuôi danh sách
-                prompt.append({
-                    "role": m.role.value, 
-                    "content": m.content
-                })
-            
-        # print(f"Đầu vào của hàm llm_req:{prompt}")
-        response = llm_req(authors[self.model_name], token_ids[self.model_name],
-                           token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
-                           api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
-                           **kwargs)
-        completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
-        # completion_response = CompletionResponse(text = "dump res")
-        return completion_response_to_chat_response(completion_response)
+
     
 
     def few_shot_custom(
@@ -273,30 +248,6 @@ class LLM_Large(CustomLLM):
                 delta=w,
                 raw=response if cum == full_text else None
             )
-    @llm_chat_callback()
-    def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
-        prompt = list(self.prompt)
-        for m in messages:
-            if m.role.value == "system":
-                # insert(0, ...) sẽ chèn vào vị trí đầu tiên (index 0)
-                prompt.insert(0, {
-                    "role": m.role.value, 
-                    "content": m.content
-                })
-            else:
-                # append(...) sẽ nối vào đuôi danh sách
-                prompt.append({
-                    "role": m.role.value, 
-                    "content": m.content
-                })
-        # print(f"Đầu vào của hàm llm_req:{messages}")
-        response = llm_req(authors[self.model_name], token_ids[self.model_name],
-                           token_keys[self.model_name],self.model,
-                           prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
-                           api_url='https://api.idg.vnpt.vn/data-service/v1/chat/completions/vnptai-hackathon-small',
-                           **kwargs)
-        completion_response = CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
-        return completion_response_to_chat_response(completion_response)
     def few_shot_custom(
         self, 
         examples: List[Tuple[str, str]], 
