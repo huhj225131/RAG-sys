@@ -11,6 +11,7 @@ from llama_index.core import get_response_synthesizer
 from llama_index.core.response_synthesizers import BaseSynthesizer
 import chromadb
 from .custom_synthesizer import CustomCompactAndRefine
+from abc import ABC, abstractmethod
 
 
 
@@ -34,13 +35,15 @@ Dưới đây là các thông tin ngữ cảnh được cung cấp:
 ---------------------
 {context_str}
 ---------------------
+
 Dựa vào ngữ cảnh trên, hãy trả lời câu hỏi trắc nghiệm sau.
 Quy tắc (không nhắc lại các quy tắc):
 1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
 2. Nếu không có ngữ cảnh thì tự trả lời
-3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó.
-4. Bắt buộc phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
-5. Nếu không có câu trả lời đưa ra: "Đáp án: X"
+3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
+4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
+5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+
 Câu hỏi: {query_str}
 Giải thích
 """
@@ -56,14 +59,20 @@ Chúng tôi có thêm thông tin ngữ cảnh dưới đây:
 {context_msg}
 ---------------------
 
-Dựa trên ngữ cảnh mới này và kiến thức hiện có, hãy cập nhật hoặc tinh chỉnh câu trả lời dự kiến để nó đầy đủ và chính xác hơn.
-Nếu ngữ cảnh mới không hữu ích hoặc không liên quan, hãy giữ nguyên câu trả lời dự kiến.
+Dựa vào ngữ cảnh trên, hãy trả lời câu hỏi trắc nghiệm sau.
+Quy tắc (không nhắc lại các quy tắc):
+1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
+2. Nếu không có ngữ cảnh thì tự trả lời
+3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
+4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
+5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: X"
 
-Kết quả đã tinh chỉnh: 
+Giải thích:
 """
 
 default_refine_template = PromptTemplate(REFINE_PROMPT_STR)
-class RAGService():
+class RAGService(ABC):
     def __init__(self, node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.6)],
                  similarity_top_k=3,
                  db_path="./chroma_store",
@@ -90,23 +99,11 @@ class RAGService():
         
         # 4. Gọi hàm xây dựng Query Engine lần đầu
         self.rebuild_query_engine()
-
+    @abstractmethod
     def rebuild_query_engine(self):
         """Hàm này chịu trách nhiệm tạo lại Query Engine dựa trên config hiện tại"""
         
-        # Tạo Synthesizer với template hiện tại
-        custom_synthesizer = CustomCompactAndRefine(
-            text_qa_template=self.qa_template,
-            refine_template=self.refine_template
-        )
-        
-        # Tạo lại query_engine với các tham số hiện tại (ví dụ top_k mới)
-        self.query_engine = self.index.as_query_engine(
-            response_synthesizer=custom_synthesizer,
-            similarity_top_k=self.similarity_top_k,
-            node_postprocessors=self.node_preprocessors
-        )
-        print(f"--> System updated with top_k={self.similarity_top_k}")
+        pass
 
     def update_config(self, similarity_top_k=None, node_preprocessors=None, qa_template=None):
         """Hàm để user gọi từ bên ngoài khi muốn đổi config"""
@@ -131,3 +128,20 @@ class RAGService():
     @track_decorator(name="RAG Query")
     def query(self, query_str):
         return self.query_engine.query(query_str)
+    
+class SimpleRAGService(RAGService):
+    def rebuild_query_engine(self):
+        """Hàm này chịu trách nhiệm tạo lại Query Engine dựa trên config hiện tại"""
+        
+        # Tạo Synthesizer với template hiện tại
+        custom_synthesizer = CustomCompactAndRefine(
+            text_qa_template=self.qa_template,
+            refine_template=self.refine_template
+        )
+        
+        # Tạo lại query_engine với các tham số hiện tại (ví dụ top_k mới)
+        self.query_engine = self.index.as_query_engine(
+            response_synthesizer=custom_synthesizer,
+            similarity_top_k=self.similarity_top_k,
+            node_postprocessors=self.node_preprocessors
+        )

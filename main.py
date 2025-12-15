@@ -1,5 +1,5 @@
 
-from core import RAGService,LLM_Large,LLM_Small,Embedding
+from core import SimpleRAGService,LLM_Large,LLM_Small,Embedding
 from metric import setup_opik
 import logging
 from dotenv import load_dotenv
@@ -22,9 +22,9 @@ Settings.chunk_overlap=200
 #                  collection_name="emb",
 #                  qa_template=default_qa_template,
 #                  refine_template=default_refine_template):
-Settings.llm = LLM_Small()
+Settings.llm = LLM_Large()
 Settings.embed_model =Embedding()
-rag_service = RAGService()
+rag_service = SimpleRAGService()
 ###
     # RAGService là lớp bao (wrapper) quản lý việc truy vấn dữ liệu từ ChromaDB và sinh câu trả lời bằng LlamaIndex.
     
@@ -42,7 +42,7 @@ rag_service = RAGService()
     #     >>> # 3. Cập nhật cấu hình động
     #     >>> service.update_config(similarity_top_k=5)
 ###
-filename="val.json"
+filename="few_shot.json"
 base_dir = os.getenv("DATA_DIR", "./data")
 full_path = os.path.join(base_dir, filename)
 if not os.path.exists(full_path):
@@ -52,12 +52,11 @@ with open(full_path, "r", encoding="utf-8") as f:
 few_shot = []
 for i in range(2):
         index = random.randint(0, len(data) -1)
-        few_shot.append((f"{data[index]["question"]} Lựa chọn: {data[index]["choices"]}",f"{data[index]["answer"]}"))
-Settings.llm.few_shot_custom(examples=few_shot, system_instruction="Bạn là 1 trợ lý đa lĩnh vực")
+        few_shot.append((f"{data[index]["question"]}\nLựa chọn: {data[index]["choices"]}",f"Giải thích: {data[index]["explanation"]}\nĐáp án: {data[index]["answer"]}"))
+Settings.llm.few_shot_custom(examples=few_shot, system_instruction="Bạn đang giải câu hỏi trắc nghiệm")
 
-# data = ["Ai là tổng thống Mỹ",
-#         "Ai là tổng thống Pháp"]
-filename="val.json"
+
+filename="test.json"
 base_dir = os.getenv("DATA_DIR", "./data")
 full_path = os.path.join(base_dir, filename)
 if not os.path.exists(full_path):
