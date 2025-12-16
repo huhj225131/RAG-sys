@@ -3,7 +3,7 @@ from core import SimpleRAGService,LLM_Large,LLM_Small,Embedding
 from metric import setup_opik
 import logging
 from dotenv import load_dotenv
-import os,json,random,csv
+import os,json,random,csv,string
 from llama_index.core import Settings
 load_dotenv()
 
@@ -25,6 +25,7 @@ Settings.chunk_overlap=200
 Settings.llm = LLM_Large()
 Settings.embed_model =Embedding()
 rag_service = SimpleRAGService()
+llm_small = LLM_Small()
 ###
     # RAGService là lớp bao (wrapper) quản lý việc truy vấn dữ liệu từ ChromaDB và sinh câu trả lời bằng LlamaIndex.
     
@@ -89,6 +90,48 @@ def save_checkpoint(i):
         f.write(str(i))
 
 
+
+def classify_question(question):
+    """Phân loại câu hỏi: MATH, SENSITIVE, hay RAG"""
+    prompt = f"""
+    Phân loại câu hỏi sau vào 1 trong 3 nhóm:
+    - MATH: Toán học, tính toán, tư duy logic, đố vui.
+    - SENSITIVE: Chính trị nhạy cảm, bạo lực, xúc phạm, phi pháp, vi phạm đạo đức.
+    - RAG: Các câu hỏi kiến thức Lịch sử, Địa lý, Xã hội cần tra cứu.
+    
+    Câu hỏi: {question}
+    Chỉ trả về đúng tên nhóm (MATH/SENSITIVE/RAG):
+    """
+    try:
+        res = llm_small.complete(prompt)
+        ans = res.text.strip().upper() 
+        if "MATH" in ans: return "MATH"
+        if "SENSITIVE" in ans: return "SENSITIVE"
+        return "RAG"
+    except:
+        return "RAG" 
+    
+def format_choices(choices_list):
+    """
+    Biến đổi list ['X', 'Y', 'Z'] thành chuỗi:
+    A. X
+    B. Y
+    C. Z
+    ...
+    Để gửi vào prompt cho Model dễ chọn.
+    """
+    formatted_text = ""
+    labels = list(string.ascii_uppercase) 
+    
+    for i, choice in enumerate(choices_list):
+        if i < len(labels):
+            label = labels[i]
+            formatted_text += f"{label}. {choice}\n"
+            
+    return formatted_text
+
+
+
 # ================================
 #   BẮT ĐẦU CHƯƠNG TRÌNH
 # ================================
@@ -102,33 +145,69 @@ if not os.path.exists(RESULT_FILE):
         writer.writerow(["qid", "answer"])
 
 
-# Mở CSV ở chế độ append
+
 with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
     writer = csv.writer(f)
 
     for i in range(start_index, len(test_data)):
         q = test_data[i]
-
-        prompt = f'{q["question"]} Lựa chọn: {q["choices"]}'
-        print(f"\n--- Câu {q["qid"]} ---")
-        print("User:", prompt)
-
+        
+        question_text = q["question"]
+        formatted_choices = format_choices(q["choices"]) 
+        
+        prompt_for_model = f"""
+        Câu hỏi: {question_text}
+        Các lựa chọn:
+        {formatted_choices}
+        """
+        
+        print(f"\n--- Câu {q.get('qid', i)} ---")
+        
+        category = classify_question(question_text)
+        print(f"Router: [{category}]")
+        
+        answer = "A" 
         try:
-            response = rag_service.query(prompt)
-            print("Bot:", response)
+            if category == "SENSITIVE":
+                print(">>> Xử lý Sensitive...")
+                safety_prompt = f"""
+                Bạn là bộ lọc an toàn. Tìm trong các lựa chọn sau đáp án nào mang ý nghĩa TỪ CHỐI TRẢ LỜI hoặc VI PHẠM.
+                
+                {formatted_choices}
+                
+                Chỉ trả về 1 ký tự (A, B, C...).
+                Đáp án:
+                """
+                res = llm_small.complete(safety_prompt)
+                answer = res.text.strip().split()[-1].replace(".", "")
 
-            answer = str(response).strip().split()[-1]
+            elif category == "MATH":
+                print(">>> Xử lý Math...")
+                stem_prompt = f"""
+                Giải bài toán sau từng bước (Step-by-step).
+                
+                Câu hỏi: {question_text}
+                Lựa chọn:
+                {formatted_choices}
+                
+                Hãy tính toán ra nháp. Sau đó chọn đáp án đúng nhất.
+                BẮT BUỘC kết thúc bằng dòng: "Đáp án: X" (X là ký tự A, B, C...).
+                """
+                response = Settings.llm.complete(stem_prompt)
+                answer = response.text.strip().split()[-1].replace(".", "")
+
+            else:
+                print(">>> Xử lý RAG...")
+                response = rag_service.query(prompt_for_model)
+                answer = str(response).strip().split()[-1].replace(".", "")
 
         except Exception as e:
-            print("❌ Error:", e)
-            answer = "ERROR"
-            break
+            print(f"❌ Lỗi câu {q.get('qid')}: {e}")
+            answer = "A"
 
-        # Ghi kết quả
-        writer.writerow([q["qid"], answer])
+        print(f"-> Chốt đáp án: {answer}")
+
+        writer.writerow([q.get("qid"), answer])
         f.flush()
 
-        # === LƯU CHECKPOINT ===
         save_checkpoint(i + 1)
-        
-
