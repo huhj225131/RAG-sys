@@ -43,7 +43,7 @@ Quy tắc (không nhắc lại các quy tắc):
 2. Nếu không có ngữ cảnh thì tự trả lời
 3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
 4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
 Câu hỏi: {query_str}
 Giải thích
@@ -66,7 +66,7 @@ Quy tắc (không nhắc lại các quy tắc):
 2. Nếu không có ngữ cảnh thì tự trả lời
 3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
 4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
 
 Giải thích:
@@ -80,7 +80,7 @@ Quy tắc (không nhắc lại các quy tắc):
 1. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
 2. Nếu là câu hỏi toán học, hãy giải thích từng bước, không cần phải ngắn gọn
 3. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-4. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+4. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 5. Nếu không chắc chắn biết rõ đáp án,TUYỆT ĐỐI BẮT BUỘC phải đưa ra câu trả lời: "Đáp án: 1"
 Câu hỏi: {query_str}
 Giải thích
@@ -171,7 +171,7 @@ def extract_answer(text: str, valid_letters=None) -> str:
         return False
     return True
 class V2RAGService(RAGService):
-    def __init__(self, docstore_dir, 
+    def __init__(self, docstore_dir="./docstore_save", 
                  node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.6)],
                  similarity_top_k=3,
                  db_path="./chroma_store",
@@ -183,7 +183,7 @@ class V2RAGService(RAGService):
         self.sidekick = sidekick
         self.docstore_dir = docstore_dir
         self.storage_context = None 
-        
+        self.count_rag = 0
         
         super().__init__(node_preprocessors=node_preprocessors,
                          similarity_top_k=similarity_top_k,
@@ -236,7 +236,9 @@ class V2RAGService(RAGService):
     def query(self, query_str):
 
         first_ouput = Settings.llm.complete(self.sidekick.format(query_str= query_str))
-        if extract_answer(first_ouput):
-            return first_ouput
+        if extract_answer(first_ouput.text):
+            return first_ouput.text
+        print("Cần truy vấn dữ liệu RAG!!!!!")
+        self.count_rag += 1
         return self.query_engine.query(query_str)
 
