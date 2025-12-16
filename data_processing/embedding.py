@@ -4,7 +4,6 @@ from llama_index.core import VectorStoreIndex,SimpleDirectoryReader, Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.schema import TextNode
 from llama_index.core import StorageContext, Settings
-import chromadb
 import argparse
 from llama_index.core.node_parser import (
     SentenceSplitter,
