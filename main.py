@@ -1,7 +1,7 @@
 
-from core import SimpleRAGService,LLM_Large,LLM_Small,Embedding
+from core import SimpleRAGService,V2RAGService,LLM_Large,LLM_Small,Embedding
 from metric import setup_opik
-import logging
+import logging,time,re
 from dotenv import load_dotenv
 import os,json,random,csv
 from llama_index.core import Settings
@@ -130,5 +130,6 @@ with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
 
         # === LƯU CHECKPOINT ===
         save_checkpoint(i + 1)
-        
+
+
 
