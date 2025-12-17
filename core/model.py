@@ -1,4 +1,5 @@
 ## Tạo lớp model cho llamaindex 
+import time
 from typing import  List, Any,Dict,Tuple,Sequence
 from llama_index.core.llms import (
     CustomLLM,
@@ -293,19 +294,26 @@ class Embedding(BaseEmbedding):
     encoding_format:str = "float"
 
     def _get_query_embedding(self, query: str) -> List[float]:
+        print("using get_query_embedding")
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=query, encoding_format=self.encoding_format)
+        
         return resp["data"][0]["embedding"]
         return [random.random() for _ in range(1024)]
     def _get_text_embedding(self, text: str) -> List[float]:
+        print("using get_text_embedding")
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=text, encoding_format=self.encoding_format)
+        
         return resp["data"][0]["embedding"]
         # return [random.random() for _ in range(1024)]
 
     def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
+        print("using get_text_embeddings")
+        time.sleep(2)
         resp = emb_req(api_url='https://api.idg.vnpt.vn/data-service/vnptai-hackathon-embedding',
                        input=texts, encoding_format=self.encoding_format)
+       
         return [item["embedding"] for item in resp["data"]]
         # return [random.random() for _ in range(1024)]
     async def _aget_query_embedding(self, query: str) -> List[float]:
