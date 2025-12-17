@@ -1,0 +1,16 @@
+qid,truth,pred
+val_0011,B,A
+val_0024,A,B
+val_0035,B,C
+val_0038,B,A
+val_0040,E,A
+val_0050,C,A
+val_0051,A,C
+val_0054,C,D
+val_0055,A,B
+val_0066,E,B
+val_0067,B,D
+val_0072,D,A
+val_0082,B,C
+val_0086,B,C
+val_0090,B,C
