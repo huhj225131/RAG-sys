@@ -1,7 +1,7 @@
 
 from core import SimpleRAGService,V2RAGService,LLM_Large,LLM_Small,Embedding
 from metric import setup_opik
-import logging,time,re
+import logging,time,re,sys
 from dotenv import load_dotenv
 import os,json,random,csv
 from llama_index.core import Settings
@@ -10,6 +10,21 @@ load_dotenv()
 logging.getLogger("opik").setLevel(logging.ERROR)
 
 setup_opik()
+class DualLogger:
+    def __init__(self, filename="run_logs.txt"):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a", encoding="utf-8")
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+# Redirect toàn bộ print vào file
+sys.stdout = DualLogger("run_logs.txt")
+sys.stderr = sys.stdout
 
 Settings.context_window=32000
 Settings.num_output=4000
@@ -116,10 +131,10 @@ with open(few_shot_path, "r", encoding="utf-8") as f:
     few_shot_data = json.load(f)
 
 random.seed(42)
-few_shot_items = random.sample(few_shot_data, k=min(2, len(few_shot_data)))
+few_shot_items = random.sample(few_shot_data, 2)
 few_shot = [
     (
-        f"{item['question']}\nLựa chọn: {item['choices']}",
+        f"Câu hỏi: {item['question']}\nLựa chọn: {item['choices']}",
         f"Giải thích: {item['explanation']}\nĐáp án: {item['answer']}"
     )
     for item in few_shot_items
@@ -179,7 +194,7 @@ with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
 
     for i in range(start_index, len(test_data)):
         q = test_data[i]
-        prompt = f"{q['question']} Lựa chọn: {q['choices']}"
+        prompt = f"{q['question']}\nLựa chọn: {q['choices']}"
         print(f"\n--- Câu {q['qid']} ---")
         print(prompt)
         retry = 0
@@ -235,5 +250,6 @@ with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
                 print("Thử quay lại LLM_Large")
                 set_llm_large()
 print(f"Số lần sử dụng RAG {rag_service.count_rag}")
+print(f"Số lần sử dụng RAG đúng {rag_service.rag_hit}")
 print("CHẠY XONG")
 
