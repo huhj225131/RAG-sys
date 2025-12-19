@@ -16,18 +16,6 @@ from abc import ABC, abstractmethod
 
 
 
-enable_opik = os.getenv("ENABLE_OPIK", "False").lower() == "true"
-
-if enable_opik:
-    import opik
-    # Nếu BẬT: Dùng decorator thật của Opik
-    track_decorator = opik.track
-else:
-    # Nếu TẮT: Tạo một decorator giả (không làm gì cả)
-    def track_decorator(name=None, **kwargs):
-        def decorator(func):
-            return func 
-        return decorator
     
 ## Prompt cho lần đầu gọi llm, nếu context thu được từ db dài quá thì sẽ bị cắt ra, phần đầu
 ## sử dụng prompt này để hỏi LLM, phần sau dùng prompt dưới
@@ -74,7 +62,7 @@ Giải thích:
 
 default_refine_template = PromptTemplate(REFINE_PROMPT_STR)
 
-SIDEKICK_PROMPT_STR = """
+V2_LLM_PROMPT_STR = """
 Hãy trả lời câu hỏi trắc nghiệm sau cùng các quy tắc
 Quy tắc (không nhắc lại các quy tắc):
 1. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
@@ -86,9 +74,9 @@ Quy tắc (không nhắc lại các quy tắc):
 7. Nếu câu hỏi liên quan đến hành chính,chính trị, thông tin quan trọng cần chính xác, đưa ra câu trả lời: "Đáp án: 1"
 8. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 Câu hỏi: {query_str}
-Giải thích
+Giải thích:
 """
-sidekick_template = PromptTemplate(SIDEKICK_PROMPT_STR)
+v2_llm_template = PromptTemplate(V2_LLM_PROMPT_STR)
 class RAGService(ABC):
     def __init__(self, node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.8)],
                  similarity_top_k=3,
@@ -141,7 +129,6 @@ class RAGService(ABC):
         # Nếu có thay đổi thì build lại engine
         if changed:
             self.rebuild_query_engine()
-    @track_decorator(name="RAG Query")
     def query(self, query_str):
         return self.query_engine.query(query_str)
     
@@ -181,9 +168,9 @@ class V2RAGService(RAGService):
                  collection_name="hackathon",
                  qa_template=default_qa_template,
                  refine_template=default_refine_template,
-                 sidekick=sidekick_template):
+                 v2_llm_prompt=v2_llm_template):
         
-        self.sidekick = sidekick
+        self.v2_llm_prompt = v2_llm_prompt
         self.docstore_dir = docstore_dir
         self.storage_context = None 
         self.count_rag = 0
@@ -235,20 +222,110 @@ class V2RAGService(RAGService):
             response_synthesizer=custom_synthesizer,
             node_postprocessors=self.node_preprocessors
         )
-    @track_decorator(name="RAG Query")
-
     def query(self, query_str):
-
-        first_ouput = Settings.llm.complete(self.sidekick.format(query_str= query_str))
+        Settings.llm.instruction_custom("Bạn đang trả lời câu hỏi trắc nghiệm")
+        first_ouput = Settings.llm.complete(self.v2_llm_prompt.format(query_str= query_str))
         if extract_answer(first_ouput.text):
-            return first_ouput.text
-        print("Cần truy vấn dữ liệu RAG!!!!!")
+            return (first_ouput.text,False)
+        print("Cần truy vấn dữ liệu RAG")
         self.count_rag += 1
         fa = self.query_engine.query(query_str)
-        # if (extract_answer(fa.response)):
-        #     self.rag_hit += 1
-        # else:
-        #     print("RAG lần thứ 2 !!!!!!!!!!!!!!!!")
-        #     return Settings.llm.complete(self.sidekick.format(query_str= query_str)).text
-        return fa
+        return (fa,True)
+
+
+V3_LLM_PROMPT_STR = """
+Hãy trả lời câu hỏi trắc nghiệm sau cùng các quy tắc
+Với các quy tắc:
+1. Đưa ra giải thích tại sao lại lựa chọn đáp án 
+2. Nếu là câu hỏi cần tính toán, hãy tính toán từng bước
+3. Với câu hỏi có nội dung bạo lực, nhạy cảm, BẮT BUỘC chọn đáp án có nội dung không trả lời câu hỏi này
+4. Với các câu có ngữ cảnh, hãy dựa vào thông tin và trả lời
+5. Nếu không chắc chắn biết rõ đáp án,TUYỆT ĐỐI BẮT BUỘC phải đưa ra câu trả lời: "Tôi không rõ đáp án"
+6. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
+7. Bắt buộc phải nêu ra chủ đề câu hỏi trước khi giải thích. Nếu thuộc một trong các lĩnh vực sau đây, hãy không trả lời
+    1. Lĩnh vực khoa học hỏi đáp, yêu cầu thông tin, không yêu cầu tính toán
+    2. Lĩnh vực cần tra cứu thông tin tài liệu
+    3. Lĩnh vực liên quan đến tư tưởng, nghệ thuật
+    4. Lĩnh vực trong năm 2025
+8. Nếu đúng lĩnh vực không cần trả lời hãy ưu tiên không đưa ra đáp án dù biết đáp án đúng: "Do quy định nên tôi không trả lời lĩnh vực này"
+Câu hỏi: {query_str}
+Giải thích:
+"""
+v3_llm_template = PromptTemplate(V3_LLM_PROMPT_STR)
+class V3RAGService(RAGService):
+    def __init__(self, docstore_dir="./docstore_save", 
+                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
+                 similarity_top_k=2,
+                 db_path="./chroma_store",
+                 collection_name="hackathon",
+                 qa_template=default_qa_template,
+                 refine_template=default_refine_template,
+                 v3_llm_prompt=v3_llm_template):
+        
+        self.v3_llm_prompt = v3_llm_prompt
+        self.docstore_dir = docstore_dir
+        self.storage_context = None 
+        self.count_rag = 0
+        self.rag_hit = 0
+        
+        super().__init__(node_preprocessors=node_preprocessors,
+                         similarity_top_k=similarity_top_k,
+                         db_path=db_path,
+                         collection_name=collection_name,
+                         qa_template=qa_template,
+                         refine_template=refine_template)
+
+    def rebuild_query_engine(self):
+        """
+        Override lại hàm này để dùng AutoMergingRetriever thay vì Retriever thường
+        """
+        
+        # 1. Load StorageContext (Chỉ load 1 lần nếu chưa có)
+        # AutoMergingRetriever bắt buộc cần cái này để map từ Node Con -> Node Cha
+        if self.storage_context is None:
+            print(f"Loading Storage Context from {self.docstore_dir}...")
+            self.storage_context = StorageContext.from_defaults(
+                persist_dir=self.docstore_dir,
+                vector_store=self.vector_store # Tái sử dụng vector store từ lớp cha
+            )
+
+        # 2. Tạo Base Retriever (Tìm kiếm Node Con - Leaf Nodes)
+        base_retriever = self.index.as_retriever(
+            similarity_top_k=self.similarity_top_k
+        )
+
+        # 3. Tạo AutoMergingRetriever (Wrapper quản lý việc gộp Cha-Con)
+        self.retriever = AutoMergingRetriever(
+            base_retriever, 
+            storage_context=self.storage_context, 
+            verbose=True # Bật log để xem process merge
+        )
+
+        # 4. Tạo Synthesizer (Bộ tổng hợp câu trả lời)
+        custom_synthesizer = CustomCompactAndRefine(
+            text_qa_template=self.qa_template,
+            refine_template=self.refine_template
+        )
+
+        # 5. Tạo Query Engine thủ công
+        # Vì cấu trúc Retriever phức tạp, ta dùng RetrieverQueryEngine thay vì as_query_engine
+        self.query_engine = RetrieverQueryEngine.from_args(
+            retriever=self.retriever,
+            response_synthesizer=custom_synthesizer,
+            node_postprocessors=self.node_preprocessors
+        )
+    def query(self, query_str):
+        instruct_prompt = (
+    "Bạn đang trả lời câu hỏi trắc nghiệm, chỉ trả lời những câu hỏi trong lĩnh vực quy định.\n")
+        Settings.llm.instruction_custom(instruct_prompt)
+        first_ouput = Settings.llm.complete(self.v3_llm_prompt.format(query_str= query_str))
+        # print(f"Câu trả lời của bot đầu tiên: {first_ouput.text}")
+        if extract_answer(first_ouput.text):
+            return (first_ouput.text,False)
+        Settings.llm.instruction_custom("Bạn đang trả lời câu hỏi trắc nghiệm")
+        print("Cần truy vấn dữ liệu RAG")
+        self.count_rag += 1
+        fa = self.query_engine.query(query_str)
+        return (fa,True)
+
 

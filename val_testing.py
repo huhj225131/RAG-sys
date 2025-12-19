@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 import os,json,random,csv
 from llama_index.core import Settings
 import string
+import random
 load_dotenv()
 
 logging.getLogger("opik").setLevel(logging.ERROR)
 
 
 class DualLogger:
-    def __init__(self, filename="run_logs.txt"):
+    def __init__(self, filename="run_logs_val.txt"):
         self.terminal = sys.stdout
         self.log = open(filename, "a", encoding="utf-8")
     def write(self, message):
@@ -23,7 +24,7 @@ class DualLogger:
         self.log.flush()
 
 # Redirect toàn bộ print vào file
-sys.stdout = DualLogger("run_logs.txt")
+sys.stdout = DualLogger("run_logs_val.txt")
 sys.stderr = sys.stdout
 
 Settings.context_window=32000
@@ -67,7 +68,7 @@ TRY_BACK_TO_LARGE_EVERY = int(os.getenv("TRY_BACK_TO_LARGE_EVERY", "20"))
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
 CHECKPOINT_FILE = "checkpoint.txt"
-RESULT_FILE = "result.csv"
+RESULT_FILE = "result_val.csv"
 
 def extract_answer(text: str, valid_letters=None) -> str:
     m = re.search(r"Đáp án:\s*([A-Z])\b", text, flags=re.IGNORECASE)
@@ -177,7 +178,7 @@ def set_llm_small():
     rate_limit_streak = 0
     print("Dùng LLM_Small")
 
-test_path = os.path.join(DATA_DIR, "test.json")
+test_path = os.path.join(DATA_DIR, "val.json")
 if not os.path.exists(test_path):
     raise FileNotFoundError(f"Không tìm thấy test.json tại: {test_path}")
 
@@ -188,7 +189,7 @@ start_index = load_checkpoint()
 print(f"▶ Bắt đầu từ i = {start_index} / {len(test_data)}")
 if not os.path.exists(RESULT_FILE):
     with open(RESULT_FILE, "w", newline="", encoding="utf-8") as f:
-        csv.writer(f).writerow(["qid", "answer"])
+        csv.writer(f).writerow(["qid", "answer","real_answer","compare","RAG"])
 with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
     writer = csv.writer(f)
 
@@ -208,7 +209,7 @@ with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
         valid_letters.add("X")
         while True:
             try:
-                response = rag_service.query(prompt)
+                response, using_RAG = rag_service.query(prompt)
                 text = str(response)
                 print("Bot:", text)
 
@@ -243,7 +244,7 @@ with open(RESULT_FILE, "a", newline="", encoding="utf-8") as f:
                 answer = "ERROR"
                 break
 
-        writer.writerow([q["qid"], answer])
+        writer.writerow([q["qid"], answer,q["answer"], answer==q["answer"], using_RAG])
         f.flush()
         save_checkpoint(i + 1)
 

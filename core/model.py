@@ -86,20 +86,7 @@ def llm_req(author:str,
 def few_shot_custom_rag(
     prompt, 
     examples: List[Tuple[str, str]], 
-    system_instruction: str = None
 ) -> None:
-    if system_instruction:
-        # Kiểm tra xem đã có system prompt chưa
-        has_system = False
-        for msg in prompt:
-            if msg["role"] == "system":
-                msg["content"] = system_instruction # Ghi đè
-                has_system = True
-                break
-        # Nếu chưa có thì chèn vào đầu
-        if not has_system:
-            prompt.insert(0, {"role": "system", "content": system_instruction})
-
     insert_index = 1 
     if not prompt or prompt[0]["role"] != "system":
         insert_index = 0
@@ -111,9 +98,17 @@ def few_shot_custom_rag(
     
     prompt[insert_index:insert_index] = few_shot_msgs    
 
-
+def instruction_custom_rag(prompt,system_instruction: str):
+    has_system = False
+    for msg in prompt:
+        if msg["role"] =="system":
+            msg["content"] = system_instruction
+            has_system = True
+            break
+    if not has_system:
+        prompt.insert(0, {"role": "system", "content": system_instruction})
 class LLM_Small(CustomLLM):
-    temperature:float = 1.0 
+    temperature:float = 0.5
     top_q:float = 0.6
     top_k:int = 10
     n:int = 1
@@ -139,7 +134,7 @@ class LLM_Small(CustomLLM):
             "role": "user",
             "content": prompt
         })
-        # print(f"Prompt cho completion:{prompt}")
+        # print(f"Prompt cho completion:{full_prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -179,16 +174,21 @@ class LLM_Small(CustomLLM):
             )
 
     
-
     def few_shot_custom(
         self, 
         examples: List[Tuple[str, str]], 
-        system_instruction: str = None
     ) -> None:
-        few_shot_custom_rag(self.prompt, examples=examples, system_instruction=system_instruction)
+        few_shot_custom_rag(self.prompt, examples=examples)
+
+    def instruction_custom(
+            self,
+            instruction:str
+    )-> None:
+        instruction_custom_rag(self.prompt,system_instruction=instruction)
+    
 
 class LLM_Large(CustomLLM):
-    temperature:float = 1.0 
+    temperature:float = 0.5 
     top_q:float = 0.6
     top_k:int = 10
     n:int = 1
@@ -252,9 +252,13 @@ class LLM_Large(CustomLLM):
     def few_shot_custom(
         self, 
         examples: List[Tuple[str, str]], 
-        system_instruction: str = None
     ) -> None:
-        few_shot_custom_rag(self.prompt, examples=examples, system_instruction=system_instruction)
+        few_shot_custom_rag(self.prompt, examples=examples)
+    def instruction_custom(
+            self,
+            instruction:str
+    )-> None:
+        instruction_custom_rag(self.prompt,system_instruction=instruction)
     
 
 
