@@ -256,9 +256,7 @@ class LLM_Large(CustomLLM):
     ) -> None:
         few_shot_custom_rag(self.prompt, examples=examples, system_instruction=system_instruction)
     
-
-
-def emb_req(api_url:str, **kwargs):
+def emb_req(api_url:str, max_retries=5, **kwargs):
     headers = {
         'Authorization': authors["LLM embedings"],
         'Token-id': token_ids["LLM embedings"],
@@ -269,23 +267,27 @@ def emb_req(api_url:str, **kwargs):
         'model': models["LLM embedings"],
         **kwargs
         }
-    try:
-        resp = requests.post(api_url, headers=headers, json=json_data)
-        resp.raise_for_status()  
-        data = resp.json()
-        if "data" not in data:
-            raise ValueError(f"API response malformed: {data}")
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(api_url, headers=headers, json=json_data, timeout=60) 
+            resp.raise_for_status()
+            
+            data = resp.json()
+            if "data" not in data:
+                raise ValueError(f"API response malformed: {data}")
+            return data
 
-        return data
+        except requests.exceptions.RequestException as e:
+            print(f"\n⚠️ Lỗi kết nối (Lần {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                wait_time = 5 * (attempt + 1) 
+                print(f"   -> Đợi {wait_time}s rồi thử lại...")
+                time.sleep(wait_time)
+            else:
+                raise RuntimeError(f"HTTP request failed after {max_retries} attempts: {str(e)}")
 
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"HTTP request failed: {str(e)}")
-
-    except ValueError as e:
-        raise RuntimeError(f"API returned invalid format: {str(e)}")
-
-    except Exception as e:
-        raise RuntimeError(f"Unknown error: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"Unknown error: {str(e)}")
 import random
 
 class Embedding(BaseEmbedding):

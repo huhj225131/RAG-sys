@@ -40,11 +40,11 @@ Dưới đây là các thông tin ngữ cảnh được cung cấp:
 Dựa vào ngữ cảnh trên, hãy trả lời câu hỏi trắc nghiệm sau.
 Quy tắc (không nhắc lại các quy tắc):
 1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
-2. Nếu không có ngữ cảnh thì tự trả lời
+2. Nếu không có ngữ cảnh hoặc ngữ cảnh không liên quan thì tự trả lời
 3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
 4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
-6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
+5. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
+6. TUYỆT ĐỐI BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 Câu hỏi: {query_str}
 Giải thích
 """
@@ -62,12 +62,12 @@ Chúng tôi có thêm thông tin ngữ cảnh dưới đây:
 
 Dựa vào ngữ cảnh trên, hãy trả lời câu hỏi trắc nghiệm sau.
 Quy tắc (không nhắc lại các quy tắc):
-1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
-2. Nếu không có ngữ cảnh thì tự trả lời
+1. Tìm kiếm thông tin trong ngữ cảnh nếu có để trả lời
+2. Nếu không có ngữ cảnh hoặc ngữ cảnh không liên quan thì tự trả lời
 3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
-4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-5. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
-6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
+4. Với câu hỏi có nội dung bạo lực, nhạy cảm, BẮT BUỘC chọn đáp án có nội dung không trả lời câu hỏi này
+5. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
+6. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 
 Giải thích:
 """
@@ -75,19 +75,22 @@ Giải thích:
 default_refine_template = PromptTemplate(REFINE_PROMPT_STR)
 
 SIDEKICK_PROMPT_STR = """
-Hãy trả lời câu hỏi trắc nghiệm sau.
+Hãy trả lời câu hỏi trắc nghiệm sau cùng các quy tắc
 Quy tắc (không nhắc lại các quy tắc):
 1. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
-2. Nếu là câu hỏi toán học, hãy giải thích từng bước, không cần phải ngắn gọn
-3. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-4. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh đại diện cho đáp án
+2. Nếu là câu hỏi cần tính toán, hãy giải thích từng bước, nhắc lại thứ tự kết quả sau mỗi 3 bước
+3. Với câu hỏi có nội dung bạo lực, nhạy cảm, BẮT BUỘC chọn đáp án có nội dung không trả lời câu hỏi này
+4. Với các câu có đoạn thông tin cho trước, hãy dựa vào thông tin và trả lời
 5. Nếu không chắc chắn biết rõ đáp án,TUYỆT ĐỐI BẮT BUỘC phải đưa ra câu trả lời: "Đáp án: 1"
+6. Dựa vào ngữ cảnh câu hỏi đưa nếu có để trả lời câu hỏi
+7. Nếu câu hỏi liên quan đến hành chính,chính trị, thông tin quan trọng cần chính xác, đưa ra câu trả lời: "Đáp án: 1"
+8. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 Câu hỏi: {query_str}
 Giải thích
 """
 sidekick_template = PromptTemplate(SIDEKICK_PROMPT_STR)
 class RAGService(ABC):
-    def __init__(self, node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.6)],
+    def __init__(self, node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.8)],
                  similarity_top_k=3,
                  db_path="./chroma_store",
                  collection_name="emb",
@@ -171,9 +174,9 @@ def extract_answer(text: str, valid_letters=None) -> str:
         return False
     return True
 class V2RAGService(RAGService):
-    def __init__(self, docstore_dir, 
-                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.6)],
-                 similarity_top_k=3,
+    def __init__(self, docstore_dir="./docstore_save", 
+                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.8)],
+                 similarity_top_k=2,
                  db_path="./chroma_store",
                  collection_name="hackathon",
                  qa_template=default_qa_template,
@@ -183,7 +186,8 @@ class V2RAGService(RAGService):
         self.sidekick = sidekick
         self.docstore_dir = docstore_dir
         self.storage_context = None 
-        
+        self.count_rag = 0
+        self.rag_hit = 0
         
         super().__init__(node_preprocessors=node_preprocessors,
                          similarity_top_k=similarity_top_k,
@@ -236,7 +240,15 @@ class V2RAGService(RAGService):
     def query(self, query_str):
 
         first_ouput = Settings.llm.complete(self.sidekick.format(query_str= query_str))
-        if extract_answer(first_ouput):
-            return first_ouput
-        return self.query_engine.query(query_str)
+        if extract_answer(first_ouput.text):
+            return first_ouput.text
+        print("Cần truy vấn dữ liệu RAG!!!!!")
+        self.count_rag += 1
+        fa = self.query_engine.query(query_str)
+        # if (extract_answer(fa.response)):
+        #     self.rag_hit += 1
+        # else:
+        #     print("RAG lần thứ 2 !!!!!!!!!!!!!!!!")
+        #     return Settings.llm.complete(self.sidekick.format(query_str= query_str)).text
+        return fa
 
