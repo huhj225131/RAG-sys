@@ -1,0 +1,62 @@
+[
+  {
+    "qid": "gen_001",
+    "question": "Trong hệ Mặt Trời, hành tinh nào nằm gần Mặt Trời nhất?",
+    "choices": [
+      "Sao Kim",
+      "Sao Hỏa",
+      "Sao Thủy",
+      "Trái Đất"
+    ],
+    "answer": "C",
+    "explanation": "Sao Kim là hành tinh thứ 2, Trái Đất là hành tinh thứ 3 và Sao Hỏa là hành tinh thứ 4 tính từ trung tâm. Trong khi đó, Sao Thủy có quỹ đạo nhỏ nhất và vị trí nằm sát Mặt Trời nhất. Do đó, đáp án đúng là Sao Thủy."
+  },
+  {
+    "qid": "gen_002",
+    "question": "Sự kiện Bác Hồ đọc bản Tuyên ngôn Độc lập tại quảng trường Ba Đình diễn ra vào năm nào?",
+    "choices": [
+      "1930",
+      "1945",
+      "1954",
+      "1975"
+    ],
+    "answer": "B",
+    "explanation": "Năm 1930 là năm thành lập Đảng, 1954 là chiến thắng Điện Biên Phủ, và 1975 là ngày giải phóng miền Nam. Sự kiện khai sinh ra nước Việt Nam Dân chủ Cộng hòa diễn ra ngay sau khi Cách mạng tháng Tám thành công. Vì vậy, mốc thời gian chính xác là năm 1945."
+  },
+  {
+    "qid": "gen_003",
+    "question": "Khí nào sau đây là nguyên liệu chính cây xanh hấp thụ để thực hiện quá trình quang hợp?",
+    "choices": [
+      "Oxy (O2)",
+      "Nitơ (N2)",
+      "Carbon Dioxide (CO2)",
+      "Heli (He)"
+    ],
+    "answer": "C",
+    "explanation": "Oxy là sản phẩm thải ra của quá trình quang hợp, còn Nitơ và Heli không tham gia trực tiếp vào phản ứng tổng hợp chất hữu cơ của lá cây. Cây xanh cần lấy khí cacbonic từ không khí để kết hợp với nước dưới ánh sáng mặt trời. Suy ra, khí cần thiết là Carbon Dioxide (CO2)."
+  },
+  {
+    "qid": "gen_004",
+    "question": "Thành phần nào trong máy tính có chức năng lưu trữ dữ liệu tạm thời và sẽ mất dữ liệu khi ngắt nguồn điện?",
+    "choices": [
+      "Ổ cứng (HDD/SSD)",
+      "RAM",
+      "ROM",
+      "CPU"
+    ],
+    "answer": "B",
+    "explanation": "Ổ cứng và ROM là các bộ nhớ dài hạn (non-volatile), dữ liệu vẫn còn khi tắt máy. CPU là bộ xử lý trung tâm, không phải nơi lưu trữ chính. Chỉ có bộ nhớ truy cập ngẫu nhiên là nơi chứa dữ liệu đang hoạt động và có đặc tính 'bay hơi'. Kết luận, thành phần đó là RAM."
+  },
+  {
+    "qid": "gen_005",
+    "question": "Châu lục nào có diện tích nhỏ nhất trên Trái Đất?",
+    "choices": [
+      "Châu Âu",
+      "Châu Đại Dương",
+      "Châu Nam Cực",
+      "Châu Mỹ"
+    ],
+    "answer": "B",
+    "explanation": "Châu Mỹ, Châu Âu và Châu Nam Cực đều là những lục địa lớn. Trong khi đó, Châu Đại Dương bao gồm lục địa Úc và các đảo nhỏ ở Thái Bình Dương, có tổng diện tích đất liền khiêm tốn nhất so với các châu lục khác. Vì thế, đáp án là Châu Đại Dương."
+  }
+]

@@ -10,13 +10,50 @@ from llama_index.core.retrievers import AutoMergingRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core import get_response_synthesizer
 from llama_index.core.response_synthesizers import BaseSynthesizer
-import chromadb,re
+import chromadb,re,string,random,json
 from .custom_synthesizer import CustomCompactAndRefine
 from abc import ABC, abstractmethod
 
 
 
+def get_few_shot_examples(filename:str,least:int,data_dir:str ="./core/"):
+    """
+    Hàm load few-shot an toàn.
+    Trả về list examples để nạp vào Settings.llm sau này.
+    """
+    full_path = os.path.join(data_dir, filename)
     
+    # Nếu không tìm thấy ở data_dir, thử tìm ở thư mục hiện tại
+    if not os.path.exists(full_path):
+        full_path = filename
+        
+    if not os.path.exists(full_path):
+        print(f"Warning: Không tìm thấy {filename}, chạy chế độ Zero-shot.")
+        return []
+
+    try:
+        with open(full_path, "r", encoding="utf-8") as f:
+            few_shot_data = json.load(f)
+        
+        random.seed(42)
+        # Lấy tối đa 2 mẫu hoặc ít hơn nếu file không đủ
+        count = min(least, len(few_shot_data))
+        few_shot_items = random.sample(few_shot_data, count)
+        
+        few_shot_examples = []
+        for item in few_shot_items:
+            choices = "\n".join(
+                f"{letter}.{text}"
+                for letter, text in zip(string.ascii_uppercase, item["choices"])
+            )
+            few_shot_examples.append({
+                f"Câu hỏi: {item['question']}\nLựa chọn: {choices}",
+                f"Giải thích: {item['explanation']}\nĐáp án: {item['answer']}"
+            })
+        return few_shot_examples
+    except Exception as e:
+        print(f"Error loading few-shot: {e}")
+        return []
 ## Prompt cho lần đầu gọi llm, nếu context thu được từ db dài quá thì sẽ bị cắt ra, phần đầu
 ## sử dụng prompt này để hỏi LLM, phần sau dùng prompt dưới
 QA_PROMPT_STR = """
@@ -30,11 +67,11 @@ Quy tắc (không nhắc lại các quy tắc):
 1. Tìm kiếm thông tin trong ngữ cảnh (nếu có) để trả lời
 2. Nếu không có ngữ cảnh hoặc ngữ cảnh không liên quan thì tự trả lời
 3. Đưa ra giải thích ngắn gọn vì sao chọn đáp án đó
-4. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
-5. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: 1"
-6. TUYỆT ĐỐI BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
+4. Nếu là câu hỏi yêu cầu tính toán thì cần làm từng bước
+5. Với câu hỏi có nội dung bạo lực, nhạy cảm, bắt buộc chọn đáp án có nội dung không trả lời câu hỏi này
+6. Nếu không có câu trả lời, bắt buộc trả lời: "Đáp án: A"
+7. TUYỆT ĐỐI BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
 Câu hỏi: {query_str}
-Giải thích
 """
 default_qa_template = PromptTemplate(QA_PROMPT_STR)
 
@@ -162,10 +199,10 @@ def extract_answer(text: str, valid_letters=None) -> str:
     return True
 class V2RAGService(RAGService):
     def __init__(self, docstore_dir="./docstore_save", 
-                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.8)],
+                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.35)],
                  similarity_top_k=2,
                  db_path="./chroma_store",
-                 collection_name="hackathon",
+                 collection_name="emb",
                  qa_template=default_qa_template,
                  refine_template=default_refine_template,
                  v2_llm_prompt=v2_llm_template):
@@ -175,6 +212,7 @@ class V2RAGService(RAGService):
         self.storage_context = None 
         self.count_rag = 0
         self.rag_hit = 0
+        self.few_shot_rag = get_few_shot_examples(filename="few_shot.json",least=2)
         
         super().__init__(node_preprocessors=node_preprocessors,
                          similarity_top_k=similarity_top_k,
@@ -224,13 +262,14 @@ class V2RAGService(RAGService):
         )
     def query(self, query_str):
         Settings.llm.instruction_custom("Bạn đang trả lời câu hỏi trắc nghiệm")
+        Settings.llm.few_shot_custom(self.few_shot_rag)
         first_ouput = Settings.llm.complete(self.v2_llm_prompt.format(query_str= query_str))
         if extract_answer(first_ouput.text):
-            return (first_ouput.text,False)
+            return first_ouput.text
         print("Cần truy vấn dữ liệu RAG")
         self.count_rag += 1
         fa = self.query_engine.query(query_str)
-        return (fa,True)
+        return fa
 
 
 V3_LLM_PROMPT_STR = """
@@ -238,26 +277,26 @@ Hãy trả lời câu hỏi trắc nghiệm sau cùng các quy tắc
 Với các quy tắc:
 1. Đưa ra giải thích tại sao lại lựa chọn đáp án 
 2. Nếu là câu hỏi cần tính toán, hãy tính toán từng bước
-3. Với câu hỏi có nội dung bạo lực, nhạy cảm, BẮT BUỘC chọn đáp án có nội dung không trả lời câu hỏi này
-4. Với các câu có ngữ cảnh, hãy dựa vào thông tin và trả lời
-5. Nếu không chắc chắn biết rõ đáp án,TUYỆT ĐỐI BẮT BUỘC phải đưa ra câu trả lời: "Tôi không rõ đáp án"
-6. BẮT BUỘC phải kết thúc bằng dòng chính xác: "Đáp án: <Ký tự>" Ký tự là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án
-7. Bắt buộc phải nêu ra chủ đề câu hỏi trước khi giải thích. Nếu thuộc một trong các lĩnh vực sau đây, hãy không trả lời
+3. Với các câu có ngữ cảnh, hãy dựa vào thông tin và trả lời
+4. Nếu không chắc chắn biết rõ đáp án,TUYỆT ĐỐI BẮT BUỘC phải đưa ra câu trả lời: "Tôi không rõ đáp án"
+5. Với câu hỏi có nội dung bạo lực, nhạy cảm, BẮT BUỘC chọn đáp án có nội dung không trả lời câu hỏi này
+6. Phải nêu ra lĩnh vực của câu hỏi. Nếu thuộc một trong các lĩnh vực sau đây, hãy không trả lời
     1. Lĩnh vực khoa học hỏi đáp, yêu cầu thông tin, không yêu cầu tính toán
     2. Lĩnh vực cần tra cứu thông tin tài liệu
-    3. Lĩnh vực liên quan đến tư tưởng, nghệ thuật
+    3. Lĩnh vực liên quan đến tư tưởng, nghệ thuật,lý thuyết kinh tế
     4. Lĩnh vực trong năm 2025
-8. Nếu đúng lĩnh vực không cần trả lời hãy ưu tiên không đưa ra đáp án dù biết đáp án đúng: "Do quy định nên tôi không trả lời lĩnh vực này"
+    5. Địa lý hành chính mới, lịch sử
+7. Nếu đúng lĩnh vực thì không cần trả lời hãy ưu tiên không đưa ra đáp án dù biết đáp án đúng: "Do câu hỏi thuộc chủ đề không cần trả lời nên tôi không trả lời"
+8. Nếu đó đáp án, phải kết thúc bằng: "Đáp án: <Ký tự>" <Ký tự> là 1 chứ cái tiếng Anh từ A-Z đại diện cho đáp án, hoặc  "Do câu hỏi thuộc chủ đề không cần trả lời nên tôi không trả lời" nếu không trả lời
 Câu hỏi: {query_str}
-Giải thích:
 """
 v3_llm_template = PromptTemplate(V3_LLM_PROMPT_STR)
 class V3RAGService(RAGService):
     def __init__(self, docstore_dir="./docstore_save", 
-                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
+                 node_preprocessors=[SimilarityPostprocessor(similarity_cutoff=0.4)],
                  similarity_top_k=2,
                  db_path="./chroma_store",
-                 collection_name="hackathon",
+                 collection_name="emb",
                  qa_template=default_qa_template,
                  refine_template=default_refine_template,
                  v3_llm_prompt=v3_llm_template):
@@ -267,7 +306,8 @@ class V3RAGService(RAGService):
         self.storage_context = None 
         self.count_rag = 0
         self.rag_hit = 0
-        
+        self.first_stage_fewshot = get_few_shot_examples(filename="first_few_shot.json",least=5)
+        self.few_shot_rag = get_few_shot_examples(filename="few_shot.json",least=2)
         super().__init__(node_preprocessors=node_preprocessors,
                          similarity_top_k=similarity_top_k,
                          db_path=db_path,
@@ -315,17 +355,24 @@ class V3RAGService(RAGService):
             node_postprocessors=self.node_preprocessors
         )
     def query(self, query_str):
-        instruct_prompt = (
-    "Bạn đang trả lời câu hỏi trắc nghiệm, chỉ trả lời những câu hỏi trong lĩnh vực quy định.\n")
+        instruct_prompt = """Bạn đang trả lời câu hỏi trắc nghiệm, chỉ trả lời những câu hỏi trong lĩnh vực quy định.
+                Các chủ đề KHÔNG TRẢ LỜI:
+                1. Lĩnh vực khoa học hỏi đáp, yêu cầu thông tin, không yêu cầu tính toán.
+                2. Lĩnh vực cần tra cứu thông tin tài liệu.
+                3. Lĩnh vực liên quan đến tư tưởng, nghệ thuật, lý thuyết kinh tế.
+                4. Lĩnh vực trong năm 2025.
+                5. Địa lý hành chính mới, lịch sử."""
         Settings.llm.instruction_custom(instruct_prompt)
+        Settings.llm.few_shot_custom(self.first_stage_fewshot)
         first_ouput = Settings.llm.complete(self.v3_llm_prompt.format(query_str= query_str))
         # print(f"Câu trả lời của bot đầu tiên: {first_ouput.text}")
         if extract_answer(first_ouput.text):
-            return (first_ouput.text,False)
+            return first_ouput.text
         Settings.llm.instruction_custom("Bạn đang trả lời câu hỏi trắc nghiệm")
+        Settings.llm.few_shot_custom(self.few_shot_rag)
         print("Cần truy vấn dữ liệu RAG")
         self.count_rag += 1
         fa = self.query_engine.query(query_str)
-        return (fa,True)
+        return fa
 
 

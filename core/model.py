@@ -34,6 +34,15 @@ models = {}
 models["LLM small"]= 'vnptai_hackathon_small'
 models["LLM embedings"]= 'vnptai_hackathon_embedding'
 models["LLM large"]='vnptai_hackathon_large'
+def keep_only_system(prompt):
+    if not prompt:
+        return []
+
+    if prompt[0].get("role") == "system":
+        return [prompt[0]]
+
+    # fallback nếu lỡ không có system
+    return []
 
 def llm_req(author:str,
             token_id:str,
@@ -134,7 +143,7 @@ class LLM_Small(CustomLLM):
             "role": "user",
             "content": prompt
         })
-        # print(f"Prompt cho completion:{full_prompt}")
+        print(f"Prompt cho completion:{full_prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -142,7 +151,7 @@ class LLM_Small(CustomLLM):
                            **kwargs)
         
         return CompletionResponse(text=response['choices'][-1]["message"]['content'],raw=response)
-        # return CompletionResponse(text = "dump res")
+
     
     @llm_completion_callback()
     def stream_complete(
@@ -178,6 +187,7 @@ class LLM_Small(CustomLLM):
         self, 
         examples: List[Tuple[str, str]], 
     ) -> None:
+        self.prompt= keep_only_system(self.prompt)
         few_shot_custom_rag(self.prompt, examples=examples)
 
     def instruction_custom(
@@ -213,6 +223,7 @@ class LLM_Large(CustomLLM):
             "role": "user",
             "content": prompt
         })
+        print(f"Câu cho completion: {full_prompt}")
         response = llm_req(authors[self.model_name], token_ids[self.model_name],
                            token_keys[self.model_name],self.model,
                            full_prompt, self.temperature,self.top_q,self.top_k,self.n,self.max_completion_tokens,
@@ -253,6 +264,7 @@ class LLM_Large(CustomLLM):
         self, 
         examples: List[Tuple[str, str]], 
     ) -> None:
+        self.prompt= keep_only_system(self.prompt)
         few_shot_custom_rag(self.prompt, examples=examples)
     def instruction_custom(
             self,
