@@ -25,6 +25,7 @@ Quy trình xử lý một câu hỏi đi qua các bước tuần tự như sau:
 * Kết quả từ bước 3 (Parent hoặc Leaf nodes) được đưa qua bộ lọc **Similarity Post-processor**.
 * Chỉ những nội dung có điểm tương đồng (score) **> 0.4** mới được giữ lại làm **Ngữ cảnh cuối cùng**.
 * Cuối cùng, ngữ cảnh này được đưa vào **LLM Synthesizer** để tổng hợp và trả về **Kết quả RAG**.
+<img src="asset/asset1.png" alt="Minh họa luồng làm việc RAG">
 
 ---
 
