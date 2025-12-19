@@ -8,3 +8,6 @@ core/__pycache__/
 docstore_save/
 chroma_store/
 test.json
+docstore_save/
+
+chroma_store/
