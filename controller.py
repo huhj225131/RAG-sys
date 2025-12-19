@@ -2,7 +2,7 @@
 import os
 import shutil
 from data_processing.crawl import run_crawler
-from data_processing.embedding import embed_jsonl_file
+from data_processing.embedding import embed_new_docs_from_db 
 from data_processing.embed_word import process_docx_list
 from data_processing.embed_md import process_md_list
 
@@ -14,15 +14,15 @@ UPLOAD_TEMP_DIR = "./temp_uploads"
 def update_web_data():
     if not os.path.exists(SEEDS_FILE):
         return False, "Không tìm thấy file seeds!"
-    
-    with open(SEEDS_FILE, "r", encoding="utf-8") as f:
+    with open(SEEDS_FILE, "r", encoding="utf-8", errors="ignore") as f:
         seeds = [line.strip() for line in f if line.strip()]
 
-    jsonl_path, count = run_crawler(seeds, max_pages=50, re_crawl_seeds=True)
+    _, count = run_crawler(seeds, max_pages=50, re_crawl_seeds=True)
     
     if count > 0:
-        embed_count = embed_jsonl_file(jsonl_path, persist_dir=CHROMA_DIR)
-        return True, f"Cập nhật thành công {embed_count} bài viết mới."
+        print(f"[Pipeline] Bắt đầu embed {count} bài mới từ Database...")
+        embed_count = embed_new_docs_from_db(persist_dir=CHROMA_DIR)
+        return True, f"Cập nhật thành công! Đã crawl {count} bài và embed {embed_count} bài mới."
     else:
         return True, "Hệ thống đã cập nhật. Không có bài mới."
 

@@ -1,15 +1,10 @@
-# admin_app.py
 import streamlit as st
 import controller as pipe
 
 st.set_page_config(page_title="RAG Admin Dashboard", layout="wide")
-
 st.title("Hệ thống Quản trị Dữ liệu RAG")
 st.markdown("---")
-
 col1, col2 = st.columns(2)
-
-# --- PANEL 1: CẬP NHẬT WEB ---
 with col1:
     st.header("🌐 Cập nhật từ Website")
     if st.button("Chạy Auto-Crawl & Embed", type="primary"):

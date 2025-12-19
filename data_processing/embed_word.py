@@ -28,7 +28,6 @@ def _create_and_persist_index(documents: List[Document], persist_dir: str, colle
     if not documents:
         print("Không có tài liệu nào để xử lý.")
         return
-
     Settings.embed_model = Embedding(embed_batch_size=5) 
     node_parser = HierarchicalNodeParser.from_defaults(
         chunk_sizes=[1024, 512], 
@@ -46,14 +45,12 @@ def _create_and_persist_index(documents: List[Document], persist_dir: str, colle
     docstore_path = os.path.join(docstore_dir, "docstore.json")
     
     if os.path.exists(docstore_path):
-        # Load old docstore
         storage_context = StorageContext.from_defaults(
             persist_dir=docstore_dir, 
             vector_store=vector_store
         )
     else:
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
     storage_context.docstore.add_documents(all_nodes)
     VectorStoreIndex(
         leaf_nodes,
@@ -61,7 +58,6 @@ def _create_and_persist_index(documents: List[Document], persist_dir: str, colle
         show_progress=True
     )
     storage_context.persist(persist_dir=docstore_dir)
-    print(f"Đã lưu Vector vào '{persist_dir}' và Docstore vào '{docstore_dir}'")
 
 def process_docx_list(file_paths: list, persist_dir="./chroma_store", collection="emb", docstore_dir="./docstore_save"):
     documents = []
@@ -82,6 +78,7 @@ def process_docx_list(file_paths: list, persist_dir="./chroma_store", collection
     
     if not documents: 
         return 0
+
     _create_and_persist_index(documents, persist_dir, collection, docstore_dir)
     return len(documents)
 
@@ -94,8 +91,10 @@ def load_word_files_from_folder(folder_path: str, dataset_tag: str) -> List[Docu
     docs = []
     for file_path in word_files:
         if file_path.name.startswith("~$"): continue 
+        
         content = read_docx_text(file_path)
         if not content: continue
+        
         title = file_path.stem 
         meta = {
             "source": file_path.name,
@@ -110,13 +109,14 @@ def load_word_files_from_folder(folder_path: str, dataset_tag: str) -> List[Docu
 
 def main():
     parser = argparse.ArgumentParser(description="")
+    
     parser.add_argument("--persist-dir", type=str, default="./chroma_store")
     parser.add_argument("--collection", type=str, default="emb")
     parser.add_argument("--docstore-dir", type=str, default="./docstore_save")
     parser.add_argument("--folder", type=str, required=True, help="")
     parser.add_argument("--tag", type=str, default="tai_lieu_word", help="Tag dataset")
-    args = parser.parse_args()
 
+    args = parser.parse_args()
     documents = load_word_files_from_folder(args.folder, dataset_tag=args.tag)
     
     if not documents:

@@ -82,7 +82,7 @@ def create_documents(records: List[Dict[str, Any]], min_len: int, dataset_tag: s
 def main():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--persist-dir", type=str, default="./chroma_store")
-    parser.add_argument("--collection", type=str, default="admin_emb")
+    parser.add_argument("--collection", type=str, default="emb")
     parser.add_argument("--docstore-dir", type=str, default="./docstore_save")
     parser.add_argument("--jsonl", type=str, required=True)
     parser.add_argument("--tag", type=str, default="general", help="")

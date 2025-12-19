@@ -117,7 +117,6 @@ def main():
 
     args = parser.parse_args()
     documents = load_md_files_from_folder(args.folder, dataset_tag=args.tag)
-    
     if not documents:
         raise RuntimeError("Không có document nào để xử lý.")
         
