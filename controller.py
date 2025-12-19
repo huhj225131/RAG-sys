@@ -1,6 +1,7 @@
 # pipeline_controller.py
 import os
 import shutil
+import random
 from data_processing.crawl import run_crawler
 from data_processing.embedding import embed_new_docs_from_db 
 from data_processing.embed_word import process_docx_list
@@ -16,12 +17,12 @@ def update_web_data():
         return False, "Không tìm thấy file seeds!"
     with open(SEEDS_FILE, "r", encoding="utf-8", errors="ignore") as f:
         seeds = [line.strip() for line in f if line.strip()]
-
-    _, count = run_crawler(seeds, max_pages=50, re_crawl_seeds=True)
+    random.shuffle(seeds)
+    _, count = run_crawler(seeds, max_pages=len(seeds)*4, re_crawl_seeds=True)
     
     if count > 0:
-        print(f"[Pipeline] Bắt đầu embed {count} bài mới từ Database...")
-        embed_count = embed_new_docs_from_db(persist_dir=CHROMA_DIR)
+        print(f"Bắt đầu embed {count} bài mới từ Database...")
+        embed_count = embed_new_docs_from_db(persist_dir=CHROMA_DIR, docstore_dir=DOCSTORE_DIR)
         return True, f"Cập nhật thành công! Đã crawl {count} bài và embed {embed_count} bài mới."
     else:
         return True, "Hệ thống đã cập nhật. Không có bài mới."
