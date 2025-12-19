@@ -23,7 +23,7 @@ DATA_DIR = os.getenv("DATA_DIR", "./")
 CHECKPOINT_FILE = "checkpoint.txt"
 RESULT_FILE = "submission.csv"
 TIME_RESULT_FILE = "submission_time.csv"
-QUESTION_FILE="test.json"
+QUESTION_FILE="private_test.json"
 
 rag_service = V3RAGService()
 print("Dùng LLM_Large (init)")
